@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * Uses ConcurrentHashMap for thread-safety.
  */
 @Repository
-public class InMemoryItemRepository implements ItemRepository {
+public class InMemoryItemRepository implements HabitRepository {
     
     private final Map<Long, Item> storage = new ConcurrentHashMap<>();
     private final AtomicLong idGenerator = new AtomicLong(1);

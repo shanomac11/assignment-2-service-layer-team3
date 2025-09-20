@@ -1,6 +1,6 @@
 package edu.trincoll.repository;
 
-import edu.trincoll.model.Item;
+import edu.trincoll.model.Habit;
 import java.util.List;
 
 /**
