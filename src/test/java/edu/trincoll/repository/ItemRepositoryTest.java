@@ -7,7 +7,6 @@ import org.junit.jupiter.api.DisplayName;
 
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.*;
 
@@ -17,11 +16,11 @@ import static org.assertj.core.api.Assertions.*;
  */
 class ItemRepositoryTest {
     
-    private ItemRepository repository;
+    private HabitRepository repository;
     
     @BeforeEach
     void setUp() {
-        repository = new InMemoryItemRepository();
+        repository = new InMemoryHabitRepository();
         repository.deleteAll();
     }
     

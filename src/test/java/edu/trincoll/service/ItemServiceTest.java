@@ -1,8 +1,8 @@
 package edu.trincoll.service;
 
 import edu.trincoll.model.Item;
-import edu.trincoll.repository.InMemoryItemRepository;
-import edu.trincoll.repository.ItemRepository;
+import edu.trincoll.repository.InMemoryHabitRepository;
+import edu.trincoll.repository.HabitRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -21,11 +21,11 @@ import static org.assertj.core.api.Assertions.*;
 class ItemServiceTest {
     
     private ItemService service;
-    private ItemRepository repository;
+    private HabitRepository repository;
     
     @BeforeEach
     void setUp() {
-        repository = new InMemoryItemRepository();
+        repository = new InMemoryHabitRepository();
         service = new ItemService(repository);
         repository.deleteAll();
     }

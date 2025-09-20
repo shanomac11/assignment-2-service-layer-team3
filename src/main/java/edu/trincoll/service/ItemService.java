@@ -1,12 +1,11 @@
 package edu.trincoll.service;
 
 import edu.trincoll.model.Item;
-import edu.trincoll.repository.ItemRepository;
+import edu.trincoll.repository.HabitRepository;
 import edu.trincoll.repository.Repository;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * TODO: AI Collaboration Summary goes here
@@ -19,9 +18,9 @@ import java.util.stream.Collectors;
 @Service
 public class ItemService extends BaseService<Item, Long> {
     
-    private final ItemRepository repository;
+    private final HabitRepository repository;
     
-    public ItemService(ItemRepository repository) {
+    public ItemService(HabitRepository repository) {
         this.repository = repository;
     }
     
