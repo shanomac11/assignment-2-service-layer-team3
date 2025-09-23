@@ -150,6 +150,7 @@ public class InMemoryHabitRepository implements HabitRepository {
 
     @Override
     public List<Habit> findOverdue() {
+        /**
         // Simple rule: treat archived habits as "overdue".
         // If you prefer time-based, see the comment below.
         return storage.values().stream()
@@ -157,8 +158,7 @@ public class InMemoryHabitRepository implements HabitRepository {
                 .sorted(Comparator.comparing(Habit::getId))
                 .map(this::copyOf)
                 .collect(Collectors.toUnmodifiableList());
-
-        /*
+         */
     // NOTE: Alternative time-based rule (e.g., not completed for 7+ days):
     LocalDate threshold = LocalDate.now().minusDays(7);
     return storage.values().stream()
@@ -166,7 +166,6 @@ public class InMemoryHabitRepository implements HabitRepository {
             .sorted(Comparator.comparing(Habit::getId))
             .map(this::copyOf)
             .collect(Collectors.toUnmodifiableList());
-    */
     }
 
     private Habit copyOf(Habit h) {
