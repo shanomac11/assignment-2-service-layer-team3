@@ -5,55 +5,66 @@ import edu.trincoll.model.Habit;
 import java.util.List;
 
 /**
- * TODO: Rename this interface to match your domain
- * Examples: BookmarkRepository, QuoteRepository, etc.
- * 
- * Add domain-specific query methods that make sense for your use case.
+ * Repository interface for managing Habit entities.
+ * Provides domain-specific query methods for habit tracking.
+ *
+ * AI Report:
+ * - This interface supports querying habits by archived status, frequency, name, streaks, completion dates, overdue status, and creation date.
+ * - Enables flexible retrieval of habits for analytics and user feedback.
  */
 public interface HabitRepository extends Repository<Habit, Long> {
-    
-    /**
-     * Find all items with a specific status
-     */
-    //List<Habit> findByStatus(Habit.Status status);
 
+    /**
+     * Finds all habits with the specified archived status.
+     * @param archived true to find archived habits, false otherwise
+     * @return list of matching habits
+     */
     List<Habit> findByArchived(boolean archived);
-    List<Habit> findByFrequency(Habit.Frequency frequency);
-    List<Habit> findByNameContaining(String searchTerm);
-    List<Habit> findBestStreakAtLeast(int minBestStreak);
-    List<Habit> findCompletedOn(LocalDate date);
-    /**
-     * Find all items in a category
-     */
-    //List<Habit> findByCategory(String category);
-    
-    /**
-     * Find all items containing a specific tag
-     */
-   //List<Habit> findByTag(String tag);
-    
-    /**
-     * Find items with title containing search term (case-insensitive)
-     */
-    //List<Habit> findByTitleContaining(String searchTerm);
-    
-    /**
-     * TODO: Add at least 3 more domain-specific query methods (COMPLETED!)
-     * Examples:
-     * - findByAuthor(String author) for quotes
-     * - findByUrl(String url) for bookmarks  
-     * - findOverdue() for habits
-     * - findByIngredient(String ingredient) for recipes
-     */
 
     /**
-     * Find habits that are overdue (Inactive/Archived for too long)
+     * Finds all habits with the specified frequency.
+     * @param frequency the frequency to filter by
+     * @return list of matching habits
+     */
+    List<Habit> findByFrequency(Habit.Frequency frequency);
+
+    /**
+     * Finds all habits whose name contains the given search term (case-insensitive).
+     * @param searchTerm the term to search for in habit names
+     * @return list of matching habits
+     */
+    List<Habit> findByNameContaining(String searchTerm);
+
+    /**
+     * Finds all habits with a best streak at least the specified minimum.
+     * @param minBestStreak minimum best streak value
+     * @return list of matching habits
+     */
+    List<Habit> findBestStreakAtLeast(int minBestStreak);
+
+    /**
+     * Finds all habits completed on the specified date.
+     * @param date the completion date
+     * @return list of matching habits
+     */
+    List<Habit> findCompletedOn(LocalDate date);
+
+    /**
+     * Finds habits that are overdue (inactive or archived for too long).
+     * @return list of overdue habits
      */
     List<Habit> findOverdue();
 
-    //Find habits by minimum streak length (add streak field later)
+    /**
+     * Finds habits with a streak greater than the specified minimum.
+     * @param minStreak minimum streak value
+     * @return list of matching habits
+     */
     List<Habit> findStreakGreaterThan(int minStreak);
 
-    //Find habits created today
+    /**
+     * Finds habits created today.
+     * @return list of habits created today
+     */
     List<Habit> findCreatedToday();
 }

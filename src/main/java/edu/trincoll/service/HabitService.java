@@ -142,4 +142,8 @@ public class HabitService extends BaseService<Habit, Long> {
         saveAll(toArchive);
         return toArchive.size();
     }
+
+    public List<Habit> findOverdue() {
+        return habitRepository.findOverdue();
+    }
 }
