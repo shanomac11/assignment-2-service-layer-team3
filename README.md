@@ -1,15 +1,15 @@
-# Assignment 2: Service Layer Architecture - Item Management System
+# Assignment 2: Service Layer Architecture - Habit Tracking System
 
 ## Project Information
 
 **Author:** Kenneth Kousen  
 **License:** MIT License  
-**Spring Boot Version:** 3.5.5
+**Spring Boot Version:** 3.5.5  
 **Java Version:** 21+  
 
 ## Overview
 
-This project implements a complete service layer architecture for an Item Management System using Spring Boot. It demonstrates proper separation of concerns with controller, service, and repository layers, following SOLID principles and best practices.
+This project implements a complete service layer architecture for a Habit Tracking System using Spring Boot. It demonstrates proper separation of concerns with controller, service, and repository layers, following SOLID principles and best practices.
 
 ## Architecture
 
@@ -29,58 +29,63 @@ The application follows a three-layer architecture:
 
 #### 1. Repository Layer
 - **Generic Repository Interface** (`Repository<T, ID>`): Defines standard CRUD operations
-- **ItemRepository Interface**: Extends the generic repository with domain-specific queries
-- **InMemoryItemRepository**: Thread-safe implementation using `ConcurrentHashMap`
+- **HabitRepository Interface**: Extends the generic repository with domain-specific queries
+- **InMemoryHabitRepository**: Thread-safe implementation using `ConcurrentHashMap`
 
 #### 2. Service Layer
 - **BaseService Abstract Class**: Provides common CRUD operations and validation framework
-- **ItemService**: Concrete implementation with business logic and collection operations
+- **HabitService**: Concrete implementation with business logic and collection operations
 
 #### 3. Controller Layer
-- **ItemController**: RESTful endpoints for item management
+- **HabitController**: RESTful endpoints for habit management
 
 #### 4. Model
-- **Item Entity**: Domain model with id, name, and category fields
+- **Habit Entity**: Domain model with id, name, description, frequency, streaks, lastCompleted, createdAt, and archived fields
 
 ## Features
 
 ### Core Functionality
-- ✅ Full CRUD operations for items
-- ✅ Category-based filtering
+- ✅ Full CRUD operations for habits
+- ✅ Frequency-based filtering (DAILY/WEEKLY/CUSTOM)
 - ✅ Name-based search with case-insensitive matching
-- ✅ Collection operations (grouping, unique categories)
+- ✅ Streak tracking and completion logic
+- ✅ Overdue query helpers
+- ✅ Collection operations (grouping, counts)
 - ✅ Thread-safe in-memory storage
 - ✅ Input validation
 
 ### Collection Operations Demonstrated
-- **Map**: Group items by category
-- **Set**: Extract unique categories
-- **List**: Maintain ordered item collections
+- **Map**: Group habits by frequency or archived flag
+- **List**: Maintain ordered habit collections
 - **Stream API**: Filter, map, and collect operations
 - **Defensive Copying**: Protect internal state
 
-## API Endpoints
+## API Endpoints (Habits)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| GET | `/api/items` | Get all items |
-| GET | `/api/items/{id}` | Get item by ID |
-| GET | `/api/items/category/{category}` | Get items by category |
-| GET | `/api/items/search?name={name}` | Search items by name |
-| GET | `/api/items/categories` | Get all unique categories |
-| GET | `/api/items/grouped` | Get items grouped by category |
-| POST | `/api/items` | Create new item |
-| PUT | `/api/items/{id}` | Update existing item |
-| DELETE | `/api/items/{id}` | Delete item |
+| GET | `/api/habits` | Get all habits |
+| GET | `/api/habits/{id}` | Get habit by ID |
+| GET | `/api/habits/archived/{archived}` | Get habits by archived flag |
+| GET | `/api/habits/frequency/{frequency}` | Get habits by frequency |
+| GET | `/api/habits/search?query={query}` | Search habits by name |
+| GET | `/api/habits/streak/best/{minBestStreak}` | Get habits by best streak |
+| GET | `/api/habits/streak/current/{minStreak}` | Get habits by current streak |
+| GET | `/api/habits/completed/{date}` | Get habits completed on a date (YYYY-MM-DD) |
+| GET | `/api/habits/overdue` | Get habits overdue for completion |
+| GET | `/api/habits/created/today` | Get habits created today |
+| POST | `/api/habits` | Create new habit |
+| PUT | `/api/habits/{id}` | Update existing habit |
+| DELETE | `/api/habits/{id}` | Delete habit |
 
 ## Testing
 
 The project includes comprehensive test coverage:
 
 ### Test Suites
-- **ItemRepositoryTest**: Repository layer unit tests
-- **ItemServiceTest**: Service layer unit tests with mocked repository
-- **ItemIntegrationTest**: Full integration tests with MockMvc
+- **HabitRepositoryTest**: Repository layer unit tests
+- **HabitServiceTest**: Service layer unit tests
+- **HabitIntegrationTest**: Full integration tests with MockMvc
 
 ### Running Tests
 
@@ -197,21 +202,21 @@ The application will start on `http://localhost:8080`
 
 ### Testing the API
 
-Create an item:
+Create a habit:
 ```bash
-curl -X POST http://localhost:8080/api/items \
+curl -X POST http://localhost:8080/api/habits \
   -H "Content-Type: application/json" \
-  -d '{"name":"Sample Item","category":"Electronics"}'
+  -d '{"name":"Exercise","description":"Daily workout","frequency":"DAILY","targetPerWeek":7}'
 ```
 
-Get all items:
+Get all habits:
 ```bash
-curl http://localhost:8080/api/items
+curl http://localhost:8080/api/habits
 ```
 
-Search by category:
+Search by name:
 ```bash
-curl http://localhost:8080/api/items/category/Electronics
+curl "http://localhost:8080/api/habits/search?query=exer"
 ```
 
 ## Project Structure
@@ -224,25 +229,25 @@ assignment-2-service-layer/
 │   │       └── edu/trincoll/
 │   │           ├── Assignment2Application.java
 │   │           ├── model/
-│   │           │   └── Item.java
+│   │           │   └── Habit.java
 │   │           ├── repository/
 │   │           │   ├── Repository.java
-│   │           │   ├── ItemRepository.java
-│   │           │   └── InMemoryItemRepository.java
+│   │           │   ├── HabitRepository.java
+│   │           │   └── InMemoryHabitRepository.java
 │   │           ├── service/
 │   │           │   ├── BaseService.java
-│   │           │   └── ItemService.java
+│   │           │   └── HabitService.java
 │   │           └── controller/
-│   │               └── ItemController.java
+│   │               └── HabitController.java
 │   └── test/
 │       └── java/
 │           └── edu/trincoll/
 │               ├── repository/
-│               │   └── ItemRepositoryTest.java
+│               │   └── HabitRepositoryTest.java
 │               ├── service/
-│               │   └── ItemServiceTest.java
+│               │   └── HabitServiceTest.java
 │               └── integration/
-│                   └── ItemIntegrationTest.java
+│                   └── HabitIntegrationTest.java
 ```
 
 ## Design Patterns Used

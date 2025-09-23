@@ -29,14 +29,45 @@ val isJacocoReportRequested =
 tasks.test {
     useJUnitPlatform()
     jvmArgs("-XX:+EnableDynamicAgentLoading", "-Xshare:off")
+
+    // Print a clear summary and per-test outcomes in the console
+    testLogging {
+        // Show passed/failed/skipped at lifecycle level
+        events(
+            org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED,
+            org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED,
+            org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED
+        )
+    }
+
+    // One-line summary after the whole test suite finishes (Kotlin DSL-friendly)
+    addTestListener(object : org.gradle.api.tasks.testing.TestListener {
+        override fun beforeSuite(suite: org.gradle.api.tasks.testing.TestDescriptor) {}
+        override fun beforeTest(testDescriptor: org.gradle.api.tasks.testing.TestDescriptor) {}
+        override fun afterTest(
+            testDescriptor: org.gradle.api.tasks.testing.TestDescriptor,
+            result: org.gradle.api.tasks.testing.TestResult
+        ) {}
+        override fun afterSuite(
+            suite: org.gradle.api.tasks.testing.TestDescriptor,
+            result: org.gradle.api.tasks.testing.TestResult
+        ) {
+            if (suite.parent == null) {
+                println(
+                    "Tests: ${result.testCount} passed: ${result.successfulTestCount} failed: ${result.failedTestCount} skipped: ${result.skippedTestCount}"
+                )
+            }
+        }
+    })
+
     if (isJacocoReportRequested) {
         // When generating JaCoCo report explicitly, allow tests to fail but still produce coverage
         ignoreFailures = true
     }
-    finalizedBy(tasks.jacocoTestReport)
 }
 
 tasks.jacocoTestReport {
+    // Only run when explicitly requested or via `check`, not after every `test`
     dependsOn(tasks.test)
     reports {
         xml.required.set(true)
@@ -54,7 +85,7 @@ tasks.jacocoTestCoverageVerification {
         }
         rule {
             element = "CLASS"
-            includes = listOf("edu.trincoll.hr.service.*")
+            includes = listOf("edu.trincoll.service.*")
             excludes = listOf("*Application", "*Config", "*Exception")
             limit {
                 counter = "LINE"
@@ -66,10 +97,12 @@ tasks.jacocoTestCoverageVerification {
 
 tasks.check {
     dependsOn(tasks.jacocoTestCoverageVerification)
+    // Also produce the JaCoCo report when running `check`
+    dependsOn(tasks.jacocoTestReport)
 }
 
 java {
     toolchain {
-        languageVersion.set(JavaLanguageVersion.of(21))
+        languageVersion.set(JavaLanguageVersion.of(24))
     }
 }

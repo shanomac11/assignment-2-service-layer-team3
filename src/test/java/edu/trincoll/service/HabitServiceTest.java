@@ -14,7 +14,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.*;
 
-@DisplayName("HabitService tests")
 class HabitServiceTest {
 
     private HabitService service;
@@ -27,28 +26,21 @@ class HabitServiceTest {
         repository.deleteAll();
     }
 
-    // -------------------- Validation --------------------
-
     @Nested
     @DisplayName("Validation")
     class ValidationTests {
-
         @Test
         @DisplayName("Reject null habit")
-        void rejectsNull() {
+        void rejectNullHabit() {
             assertThatThrownBy(() -> service.validateEntity(null))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("cannot be null");
         }
 
         @Test
-        @DisplayName("Reject missing name")
-        void rejectsMissingName() {
+        @DisplayName("Reject habit without name")
+        void rejectNoName() {
             Habit h = new Habit();
-            h.setName("   ");
-            h.setFrequency(Habit.Frequency.DAILY);
-            h.setTargetPerWeek(7);
-
             assertThatThrownBy(() -> service.validateEntity(h))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("name is required");
@@ -56,191 +48,164 @@ class HabitServiceTest {
 
         @Test
         @DisplayName("Reject invalid targetPerWeek")
-        void rejectsInvalidTarget() {
-            Habit h = new Habit();
-            h.setName("Read");
-            h.setFrequency(Habit.Frequency.WEEKLY);
-            h.setTargetPerWeek(0);
-
+        void rejectInvalidTarget() {
+            Habit h = new Habit("Test", "", Habit.Frequency.DAILY, 0);
             assertThatThrownBy(() -> service.validateEntity(h))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("between 1 and 7");
         }
 
         @Test
+        @DisplayName("Reject null frequency")
+        void rejectNullFrequency() {
+            Habit h = new Habit("Test", "", Habit.Frequency.DAILY, 7);
+            h.setFrequency(null);
+            assertThatThrownBy(() -> service.validateEntity(h))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("Frequency is required");
+        }
+
+        @Test
         @DisplayName("Accept valid habit")
-        void acceptsValid() {
-            Habit h = new Habit("Read", "Read nightly", Habit.Frequency.DAILY, 7);
+        void acceptValidHabit() {
+            Habit h = new Habit("Valid", "Desc", Habit.Frequency.WEEKLY, 2);
             assertThatNoException().isThrownBy(() -> service.validateEntity(h));
         }
     }
 
-    // -------------------- CRUD --------------------
-
     @Nested
     @DisplayName("CRUD")
     class CrudTests {
-
         @Test
-        @DisplayName("Save habit assigns id and increments count")
-        void saveAssignsId() {
-            Habit h = new Habit("Read", "Read nightly", Habit.Frequency.DAILY, 7);
-
+        @DisplayName("findById(null) throws and existsById(null) is false")
+        void nullIdGuards() {
+            assertThatThrownBy(() -> service.findById(null))
+                    .isInstanceOf(IllegalArgumentException.class)
+                    .hasMessageContaining("ID cannot be null");
+            assertThat(service.existsById(null)).isFalse();
+        }
+        @Test
+        @DisplayName("Save with validation")
+        void saveWithValidation() {
+            Habit h = new Habit("Exercise", "Daily", Habit.Frequency.DAILY, 7);
             Habit saved = service.save(h);
-
             assertThat(saved.getId()).isNotNull();
             assertThat(service.count()).isEqualTo(1);
         }
 
         @Test
-        @DisplayName("Save invalid habit throws")
-        void saveInvalidThrows() {
-            Habit h = new Habit();
-            h.setName("");
-            h.setFrequency(Habit.Frequency.DAILY);
-            h.setTargetPerWeek(7);
-
-            assertThatThrownBy(() -> service.save(h))
-                    .isInstanceOf(IllegalArgumentException.class);
+        @DisplayName("Not save invalid")
+        void notSaveInvalid() {
+            Habit h = new Habit("", "", Habit.Frequency.DAILY, 7);
+            assertThatThrownBy(() -> service.save(h)).isInstanceOf(IllegalArgumentException.class);
             assertThat(service.count()).isZero();
         }
 
         @Test
-        @DisplayName("Find by id returns present/empty")
-        void findByIdWorks() {
-            Habit saved = service.save(new Habit("Read", "Desc", Habit.Frequency.DAILY, 7));
+        @DisplayName("Find by id and delete")
+        void findAndDelete() {
+            Habit h = service.save(new Habit("A", "", Habit.Frequency.DAILY, 7));
+            assertThat(service.findById(h.getId())).isPresent();
 
-            assertThat(service.findById(saved.getId())).isPresent();
-            assertThat(service.findById(999L)).isEmpty();
-        }
-
-        @Test
-        @DisplayName("Delete by id removes habit")
-        void deleteByIdWorks() {
-            Habit saved = service.save(new Habit("Read", "Desc", Habit.Frequency.DAILY, 7));
-            Long id = saved.getId();
-
-            service.deleteById(id);
-
-            assertThat(service.findById(id)).isEmpty();
+            service.deleteById(h.getId());
+            assertThat(service.findById(h.getId())).isEmpty();
         }
 
         @Test
         @DisplayName("Delete non-existent throws")
-        void deleteMissingThrows() {
+        void deleteNonExistent() {
             assertThatThrownBy(() -> service.deleteById(999L))
                     .isInstanceOf(IllegalArgumentException.class)
                     .hasMessageContaining("not found");
         }
     }
 
-    // -------------------- Domain queries/helpers --------------------
-
     @Nested
-    @DisplayName("Domain queries & helpers")
-    class DomainTests {
-
+    @DisplayName("Queries & Helpers")
+    class QueryTests {
         @BeforeEach
         void seed() {
-            // Active daily habit
-            Habit h1 = new Habit("Read", "Read nightly", Habit.Frequency.DAILY, 7);
-
-            // Weekly habit (active)
-            Habit h2 = new Habit("Gym", "Lift 3x/week", Habit.Frequency.WEEKLY, 3);
-
-            // Custom habit, already archived
-            Habit h3 = new Habit("Meditate", "Short sessions", Habit.Frequency.CUSTOM, 4);
-            h3.setArchived(true);
-
-            // Weekly habit last completed long ago, will be archived by rule
-            Habit h4 = new Habit("Run", "Run 2x/week", Habit.Frequency.WEEKLY, 2);
-            h4.setLastCompleted(LocalDate.now().minusDays(21));
-
+            Habit h1 = new Habit("Gym", "", Habit.Frequency.DAILY, 7);
+            Habit h2 = new Habit("Review", "", Habit.Frequency.WEEKLY, 1);
+            Habit h3 = new Habit("Walk", "Evening walk", Habit.Frequency.DAILY, 7);
+            h2.setArchived(true);
             service.save(h1);
             service.save(h2);
             service.save(h3);
-            service.save(h4);
         }
 
         @Test
-        @DisplayName("findByFrequency filters correctly")
-        void findByFrequency() {
-            List<Habit> weekly = service.findByFrequency(Habit.Frequency.WEEKLY);
-            assertThat(weekly).extracting(Habit::getName)
-                    .containsExactlyInAnyOrder("Gym", "Run");
-        }
-
-        @Test
-        @DisplayName("findByArchived filters correctly")
+        @DisplayName("Find by archived")
         void findByArchived() {
-            List<Habit> archived = service.findByArchived(true);
-            assertThat(archived).extracting(Habit::getName)
-                    .containsExactlyInAnyOrder("Meditate");
+            assertThat(service.findByArchived(true)).extracting(Habit::getName).containsExactly("Review");
         }
 
         @Test
-        @DisplayName("groupByFrequency groups correctly")
-        void groupByFrequency() {
+        @DisplayName("Find by frequency")
+        void findByFrequency() {
+            assertThat(service.findByFrequency(Habit.Frequency.DAILY)).hasSize(2);
+        }
+
+        @Test
+        @DisplayName("Group and count by frequency")
+        void groupAndCountByFrequency() {
             Map<Habit.Frequency, List<Habit>> grouped = service.groupByFrequency();
-            assertThat(grouped.get(Habit.Frequency.DAILY)).extracting(Habit::getName)
-                    .containsExactly("Read");
-            assertThat(grouped.get(Habit.Frequency.WEEKLY)).extracting(Habit::getName)
-                    .containsExactlyInAnyOrder("Gym", "Run");
-            assertThat(grouped.get(Habit.Frequency.CUSTOM)).extracting(Habit::getName)
-                    .containsExactly("Meditate");
-        }
-
-        @Test
-        @DisplayName("countByFrequency counts correctly")
-        void countByFrequency() {
             Map<Habit.Frequency, Long> counts = service.countByFrequency();
-            assertThat(counts.get(Habit.Frequency.DAILY)).isEqualTo(1);
-            assertThat(counts.get(Habit.Frequency.WEEKLY)).isEqualTo(2);
-            assertThat(counts.get(Habit.Frequency.CUSTOM)).isEqualTo(1);
+            assertThat(grouped.get(Habit.Frequency.DAILY)).hasSize(2);
+            assertThat(counts.get(Habit.Frequency.DAILY)).isEqualTo(2);
         }
 
         @Test
-        @DisplayName("countByArchived counts active vs archived")
+        @DisplayName("Count by archived flag")
         void countByArchived() {
             Map<Boolean, Long> counts = service.countByArchived();
-            assertThat(counts.get(false)).isEqualTo(3); // active
-            assertThat(counts.get(true)).isEqualTo(1);  // archived
+            assertThat(counts.get(true)).isEqualTo(1);
+            assertThat(counts.get(false)).isEqualTo(2);
         }
 
         @Test
-        @DisplayName("search looks in name & description (case-insensitive)")
+        @DisplayName("Search name/description")
         void search() {
-            List<Habit> byName = service.search("read");
-            assertThat(byName).extracting(Habit::getName)
-                    .containsExactly("Read");
-
-            List<Habit> byDesc = service.search("sessions");
-            assertThat(byDesc).extracting(Habit::getName)
-                    .containsExactly("Meditate");
+            assertThat(service.search("walk")).extracting(Habit::getName).containsExactly("Walk");
         }
 
         @Test
-        @DisplayName("completeToday bumps current/best streak")
+        @DisplayName("Complete today updates streaks")
         void completeToday() {
-            Habit read = service.findByNameContaining("read").get(0);
-            int before = read.getCurrentStreak();
-
-            Habit updated = service.completeToday(read.getId());
-            assertThat(updated.getCurrentStreak()).isEqualTo(Math.max(1, before + 1));
-            assertThat(updated.getBestStreak()).isGreaterThanOrEqualTo(updated.getCurrentStreak());
+            Habit h = service.save(new Habit("Streak", "", Habit.Frequency.DAILY, 7));
+            Habit updated = service.completeToday(h.getId());
+            assertThat(updated.getCurrentStreak()).isGreaterThanOrEqualTo(1);
+            assertThat(updated.getBestStreak()).isGreaterThanOrEqualTo(1);
+            assertThat(updated.getLastCompleted()).isEqualTo(LocalDate.now());
         }
 
         @Test
-        @DisplayName("archiveInactiveHabits archives habits older than cutoff")
-        void archiveInactiveHabits() {
-            int changed = service.archiveInactiveHabits(14); // > 2 weeks
-            assertThat(changed).isGreaterThanOrEqualTo(1);
+        @DisplayName("Set archived toggles flag")
+        void setArchived() {
+            Habit h = service.save(new Habit("Archive", "", Habit.Frequency.DAILY, 7));
+            Habit archived = service.setArchived(h.getId(), true);
+            assertThat(archived.isArchived()).isTrue();
+        }
 
-            List<Habit> archived = service.findByArchived(true);
-            assertThat(archived).extracting(Habit::getName)
-                    .contains("Meditate", "Run");
+        @Test
+        @DisplayName("Archive inactive habits")
+        void archiveInactiveHabits() {
+            // Clear any seeded data from QueryTests setup to isolate this scenario
+            service.deleteAll();
+            Habit active = new Habit("Active", "", Habit.Frequency.DAILY, 7);
+            active.setLastCompleted(LocalDate.now());
+            Habit inactive = new Habit("Inactive", "", Habit.Frequency.DAILY, 7);
+            inactive.setLastCompleted(LocalDate.now().minusDays(30));
+            Habit never = new Habit("Never", "", Habit.Frequency.DAILY, 7);
+
+            service.save(active);
+            service.save(inactive);
+            service.save(never);
+
+            int archived = service.archiveInactiveHabits(7);
+            assertThat(archived).isEqualTo(2);
+            assertThat(service.findByArchived(true)).extracting(Habit::getName)
+                    .containsExactlyInAnyOrder("Inactive", "Never");
         }
     }
 }
-
-

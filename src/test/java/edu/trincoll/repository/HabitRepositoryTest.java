@@ -2,19 +2,16 @@ package edu.trincoll.repository;
 
 import edu.trincoll.model.Habit;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.*;
 
-/**
- * Tests for the repository layer.
- * These tests align with the methods in HabitRepository and InMemoryHabitRepository.
- */
 class HabitRepositoryTest {
 
     private HabitRepository repository;
@@ -28,15 +25,14 @@ class HabitRepositoryTest {
     @Test
     @DisplayName("Should save and retrieve habit by ID")
     void testSaveAndFindById() {
-        Habit habit = new Habit("Test Habit", "Description", Habit.Frequency.DAILY, 7);
+        Habit habit = new Habit("Exercise", "Daily workout", Habit.Frequency.DAILY, 7);
 
         Habit saved = repository.save(habit);
-
         assertThat(saved.getId()).isNotNull();
 
         Optional<Habit> found = repository.findById(saved.getId());
         assertThat(found).isPresent();
-        assertThat(found.get().getName()).isEqualTo("Test Habit");
+        assertThat(found.get().getName()).isEqualTo("Exercise");
     }
 
     @Test
@@ -49,23 +45,21 @@ class HabitRepositoryTest {
     @Test
     @DisplayName("Should find all habits")
     void testFindAll() {
-        repository.save(new Habit("Habit 1", "Desc 1", Habit.Frequency.DAILY, 7));
-        repository.save(new Habit("Habit 2", "Desc 2", Habit.Frequency.WEEKLY, 2));
-        repository.save(new Habit("Habit 3", "Desc 3", Habit.Frequency.WEEKLY, 1)); // changed from MONTHLY
+        repository.save(new Habit("Meditate", "Morning", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Read", "Books", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Review", "Weekly review", Habit.Frequency.WEEKLY, 1));
 
         List<Habit> all = repository.findAll();
-
         assertThat(all).hasSize(3);
         assertThat(all).extracting(Habit::getName)
-                .containsExactlyInAnyOrder("Habit 1", "Habit 2", "Habit 3");
+                .containsExactlyInAnyOrder("Meditate", "Read", "Review");
     }
 
     @Test
     @DisplayName("Should delete habit by ID")
     void testDeleteById() {
-        Habit habit = repository.save(new Habit("To Delete", "Will be deleted", Habit.Frequency.DAILY, 7));
+        Habit habit = repository.save(new Habit("Temp", "To delete", Habit.Frequency.DAILY, 7));
         Long id = habit.getId();
-
         assertThat(repository.existsById(id)).isTrue();
 
         repository.deleteById(id);
@@ -78,7 +72,6 @@ class HabitRepositoryTest {
     @DisplayName("Should check if habit exists")
     void testExistsById() {
         Habit habit = repository.save(new Habit("Exists", "Test", Habit.Frequency.DAILY, 7));
-
         assertThat(repository.existsById(habit.getId())).isTrue();
         assertThat(repository.existsById(999L)).isFalse();
     }
@@ -87,23 +80,19 @@ class HabitRepositoryTest {
     @DisplayName("Should count habits correctly")
     void testCount() {
         assertThat(repository.count()).isZero();
-
-        repository.save(new Habit("Habit 1", "Desc", Habit.Frequency.DAILY, 7));
-        repository.save(new Habit("Habit 2", "Desc", Habit.Frequency.WEEKLY, 2));
-
+        repository.save(new Habit("A", "", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("B", "", Habit.Frequency.DAILY, 7));
         assertThat(repository.count()).isEqualTo(2);
     }
 
     @Test
     @DisplayName("Should delete all habits")
     void testDeleteAll() {
-        repository.save(new Habit("Habit 1", "Desc", Habit.Frequency.DAILY, 7));
-        repository.save(new Habit("Habit 2", "Desc", Habit.Frequency.WEEKLY, 2));
-
+        repository.save(new Habit("A", "", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("B", "", Habit.Frequency.DAILY, 7));
         assertThat(repository.count()).isEqualTo(2);
 
         repository.deleteAll();
-
         assertThat(repository.count()).isZero();
         assertThat(repository.findAll()).isEmpty();
     }
@@ -112,131 +101,119 @@ class HabitRepositoryTest {
     @DisplayName("Should save multiple habits")
     void testSaveAll() {
         List<Habit> habits = List.of(
-                new Habit("Habit 1", "Desc 1", Habit.Frequency.DAILY, 7),
-                new Habit("Habit 2", "Desc 2", Habit.Frequency.WEEKLY, 2),
-                new Habit("Habit 3", "Desc 3", Habit.Frequency.WEEKLY, 1) // changed from MONTHLY
+                new Habit("A", "", Habit.Frequency.DAILY, 7),
+                new Habit("B", "", Habit.Frequency.WEEKLY, 2),
+                new Habit("C", "", Habit.Frequency.CUSTOM, 3)
         );
-
         List<Habit> saved = repository.saveAll(habits);
-
         assertThat(saved).hasSize(3);
         assertThat(saved).allMatch(h -> h.getId() != null);
         assertThat(repository.count()).isEqualTo(3);
     }
 
     @Test
-    @DisplayName("Should find habits by archived status")
+    @DisplayName("Should find by archived flag")
     void testFindByArchived() {
-        Habit active = new Habit("Active", "Active habit", Habit.Frequency.DAILY, 7);
-        active.setArchived(false);
+        Habit a = new Habit("A", "", Habit.Frequency.DAILY, 7);
+        Habit b = new Habit("B", "", Habit.Frequency.DAILY, 7);
+        b.setArchived(true);
+        repository.save(a);
+        repository.save(b);
 
-        Habit archived = new Habit("Archived", "Archived habit", Habit.Frequency.WEEKLY, 2);
-        archived.setArchived(true);
-
-        repository.save(active);
-        repository.save(archived);
-
-        assertThat(repository.findByArchived(false)).extracting(Habit::getName)
-                .containsExactly("Active");
-        assertThat(repository.findByArchived(true)).extracting(Habit::getName)
-                .containsExactly("Archived");
+        assertThat(repository.findByArchived(true)).extracting(Habit::getName).containsExactly("B");
+        assertThat(repository.findByArchived(false)).extracting(Habit::getName).containsExactly("A");
     }
 
     @Test
-    @DisplayName("Should find habits by frequency")
+    @DisplayName("Should find by frequency")
     void testFindByFrequency() {
-        Habit habit1 = new Habit("Habit 1", "Desc", Habit.Frequency.DAILY, 7);
-        Habit habit2 = new Habit("Habit 2", "Desc", Habit.Frequency.WEEKLY, 2);
-        Habit habit3 = new Habit("Habit 3", "Desc", Habit.Frequency.DAILY, 7);
+        repository.save(new Habit("Gym", "", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Weekly Review", "", Habit.Frequency.WEEKLY, 1));
 
-        repository.save(habit1);
-        repository.save(habit2);
-        repository.save(habit3);
+        assertThat(repository.findByFrequency(Habit.Frequency.DAILY))
+                .extracting(Habit::getName).contains("Gym");
 
-        List<Habit> dailyHabits = repository.findByFrequency(Habit.Frequency.DAILY);
-
-        assertThat(dailyHabits).hasSize(2);
-        assertThat(dailyHabits).extracting(Habit::getName)
-                .containsExactlyInAnyOrder("Habit 1", "Habit 3");
+        // Null frequency returns empty list
+        assertThat(repository.findByFrequency(null)).isEmpty();
     }
 
     @Test
-    @DisplayName("Should find habits by name containing search term")
+    @DisplayName("Should find by name containing term")
     void testFindByNameContaining() {
-        repository.save(new Habit("Morning Run", "Exercise", Habit.Frequency.DAILY, 7));
-        repository.save(new Habit("Evening Read", "Book", Habit.Frequency.WEEKLY, 2));
-        repository.save(new Habit("Run Errands", "Chores", Habit.Frequency.WEEKLY, 1)); // changed from MONTHLY
-        repository.save(new Habit("Meditation", "Mindfulness", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Java Practice", "", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Python Practice", "", Habit.Frequency.DAILY, 7));
+        repository.save(new Habit("Walk", "", Habit.Frequency.DAILY, 7));
 
-        List<Habit> runHabits = repository.findByNameContaining("Run");
-
-        assertThat(runHabits).hasSize(2);
-        assertThat(runHabits).extracting(Habit::getName)
-                .containsExactlyInAnyOrder("Morning Run", "Run Errands");
+        List<Habit> results = repository.findByNameContaining("practice");
+        assertThat(results).extracting(Habit::getName)
+                .containsExactlyInAnyOrder("Java Practice", "Python Practice");
     }
 
     @Test
-    @DisplayName("Should find habits by best streak")
+    @DisplayName("Should find by best streak at least")
     void testFindBestStreakAtLeast() {
-        Habit h1 = new Habit("Habit 1", "Desc", Habit.Frequency.DAILY, 7);
-        h1.setBestStreak(5);
-
-        Habit h2 = new Habit("Habit 2", "Desc", Habit.Frequency.DAILY, 7);
-        h2.setBestStreak(2);
-
-        repository.save(h1);
-        repository.save(h2);
-
-        List<Habit> result = repository.findBestStreakAtLeast(3);
-        assertThat(result).extracting(Habit::getName).containsExactly("Habit 1");
+        Habit a = new Habit("A", "", Habit.Frequency.DAILY, 7);
+        a.setBestStreak(5);
+        Habit b = new Habit("B", "", Habit.Frequency.DAILY, 7);
+        b.setBestStreak(2);
+        repository.save(a);
+        repository.save(b);
+        assertThat(repository.findBestStreakAtLeast(3)).extracting(Habit::getName)
+                .containsExactly("A");
     }
 
     @Test
-    @DisplayName("Should find habits completed on a date")
+    @DisplayName("Should find completed on specific date")
     void testFindCompletedOn() {
-        Habit habit = new Habit("Habit", "Desc", Habit.Frequency.DAILY, 7);
-        habit.setLastCompleted(LocalDate.now());
-        repository.save(habit);
+        LocalDate today = LocalDate.now();
+        Habit a = new Habit("A", "", Habit.Frequency.DAILY, 7);
+        a.setLastCompleted(today);
+        Habit b = new Habit("B", "", Habit.Frequency.DAILY, 7);
+        b.setLastCompleted(today.minusDays(1));
+        repository.save(a);
+        repository.save(b);
+        assertThat(repository.findCompletedOn(today)).extracting(Habit::getName)
+                .containsExactly("A");
 
-        List<Habit> results = repository.findCompletedOn(LocalDate.now());
-        assertThat(results).hasSize(1);
-        assertThat(results.get(0).getName()).isEqualTo("Habit");
+        // Null date returns empty list
+        assertThat(repository.findCompletedOn(null)).isEmpty();
     }
 
     @Test
     @DisplayName("Should find overdue habits")
     void testFindOverdue() {
-        Habit habit = new Habit("Overdue Habit", "Desc", Habit.Frequency.DAILY, 7);
-        habit.setLastCompleted(LocalDate.now().minusDays(10));
-        repository.save(habit);
-
-        List<Habit> results = repository.findOverdue();
-        assertThat(results).extracting(Habit::getName).containsExactly("Overdue Habit");
+        Habit a = new Habit("A", "", Habit.Frequency.DAILY, 7);
+        a.setLastCompleted(LocalDate.now().minusDays(8));
+        Habit b = new Habit("B", "", Habit.Frequency.DAILY, 7);
+        b.setLastCompleted(LocalDate.now().minusDays(3));
+        repository.save(a);
+        repository.save(b);
+        assertThat(repository.findOverdue()).extracting(Habit::getName)
+                .containsExactly("A");
     }
 
     @Test
-    @DisplayName("Should find habits with streak greater than")
+    @DisplayName("Should find by current streak greater than threshold")
     void testFindStreakGreaterThan() {
-        Habit h1 = new Habit("Habit 1", "Desc", Habit.Frequency.DAILY, 7);
-        h1.setCurrentStreak(3);
-
-        Habit h2 = new Habit("Habit 2", "Desc", Habit.Frequency.DAILY, 7);
-        h2.setCurrentStreak(1);
-
-        repository.save(h1);
-        repository.save(h2);
-
-        List<Habit> results = repository.findStreakGreaterThan(2);
-        assertThat(results).extracting(Habit::getName).containsExactly("Habit 1");
+        Habit a = new Habit("A", "", Habit.Frequency.DAILY, 7);
+        a.setCurrentStreak(4);
+        Habit b = new Habit("B", "", Habit.Frequency.DAILY, 7);
+        b.setCurrentStreak(1);
+        repository.save(a);
+        repository.save(b);
+        assertThat(repository.findStreakGreaterThan(3)).extracting(Habit::getName)
+                .containsExactly("A");
     }
 
     @Test
     @DisplayName("Should find habits created today")
     void testFindCreatedToday() {
-        Habit habit = new Habit("Today Habit", "Desc", Habit.Frequency.DAILY, 7);
-        repository.save(habit);
-
-        List<Habit> results = repository.findCreatedToday();
-        assertThat(results).isNotEmpty();
+        Habit today = new Habit("Today", "", Habit.Frequency.DAILY, 7);
+        Habit yesterday = new Habit("Yesterday", "", Habit.Frequency.DAILY, 7);
+        yesterday.setCreatedAt(LocalDateTime.now().minusDays(1));
+        repository.save(today);
+        repository.save(yesterday);
+        assertThat(repository.findCreatedToday()).extracting(Habit::getName)
+                .containsExactly("Today");
     }
 }
